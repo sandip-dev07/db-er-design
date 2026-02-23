@@ -95,17 +95,15 @@
 @layer utilities {
   .bg-grid-pattern {
     background-size: 32px 32px;
-    background-image: 
-      linear-gradient(to right, hsl(var(--grid-line) / 0.08) 1px, transparent 1px),
-      linear-gradient(to bottom, hsl(var(--grid-line) / 0.08) 1px, transparent 1px);
+    background-image: radial-gradient(circle, hsl(var(--grid-line) / 0.2) 1.2px, transparent 1.3px);
   }
 
   .glass-panel {
-    @apply bg-background/80 backdrop-blur-xl border border-border shadow-sm shadow-black/20 dark:shadow-black/50;
+    @apply bg-background/80 backdrop-blur-xl border-b ;
   }
 
   .canvas-node {
-    @apply bg-card border border-border rounded-xl shadow-lg shadow-black/40 flex flex-col overflow-hidden transition-shadow duration-200;
+    @apply bg-card border border-border rounded-xl shadow-md shadow-black/10 flex flex-col overflow-hidden transition-shadow duration-200;
   }
   
   .canvas-node:hover {

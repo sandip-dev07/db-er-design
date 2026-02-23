@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { DatabaseSchema, Table, RelationType } from '@/lib/schema-types';
 import { ArrowRightLeft, XCircle } from 'lucide-react';
 import { useTheme } from '@/hooks/use-theme';
@@ -17,9 +17,11 @@ const HEADER_HEIGHT = 48; // Estimate based on py-3 and text size
 const ROW_HEIGHT = 40; // Estimate based on py-2 and text size
 
 export const RelationshipLines: React.FC<RelationshipLinesProps> = ({ schema, onDeleteRelation, onSwapRelation, onUpdateRelationType, scale }) => {
+  const [hoveredRelationId, setHoveredRelationId] = useState<string | null>(null);
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const lineColor = isDark ? '#a1a1aa' : '#71717a';
+  const hoverColor = '#f97316';
   const chipFill = isDark ? '#09090b' : '#ffffff';
   const chipStroke = isDark ? '#52525b' : '#a1a1aa';
   
@@ -77,7 +79,12 @@ export const RelationshipLines: React.FC<RelationshipLinesProps> = ({ schema, on
       </defs>
       
       {lines.map((line) => line && (
-        <g key={line.id} className="pointer-events-auto group">
+        <g
+          key={line.id}
+          className="pointer-events-auto group"
+          onMouseEnter={() => setHoveredRelationId(line.id)}
+          onMouseLeave={() => setHoveredRelationId(null)}
+        >
           {/* Invisible thick path for easier hovering/clicking */}
           <path 
             d={line.path} 
@@ -91,7 +98,7 @@ export const RelationshipLines: React.FC<RelationshipLinesProps> = ({ schema, on
           <path 
             d={line.path} 
             fill="none" 
-            stroke={lineColor}
+            stroke={hoveredRelationId === line.id ? hoverColor : lineColor}
             strokeWidth="2"
             strokeOpacity="0.6"
             markerEnd="url(#arrowhead)"

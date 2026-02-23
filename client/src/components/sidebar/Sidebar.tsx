@@ -12,7 +12,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ schema, onAddTable, onEditTable }) => {
   return (
-    <div className="w-64 border-r border-border bg-background/90 backdrop-blur-xl flex flex-col h-full z-20 shadow-xl shadow-black/10 dark:shadow-black">
+    <div className="w-64 border-r border-border bg-background/90 backdrop-blur-xl flex flex-col h-full z-20 ">
       <div className="p-3 border-b border-border flex items-center gap-2">
         <div className="bg-card p-2 rounded-lg border border-border">
           <Database size={16} className="text-foreground" />

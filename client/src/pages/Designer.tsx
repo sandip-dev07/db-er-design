@@ -20,6 +20,7 @@ export default function Designer() {
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [editingTable, setEditingTable] = useState<Table | undefined>(undefined);
   
   // Canvas scale tracking for accurate drag math
@@ -51,9 +52,69 @@ export default function Designer() {
     }
   };
 
+  const handleQuickAddTable = React.useCallback(() => {
+    const existingNames = new Set(store.schema.tables.map((t) => t.name));
+    let index = store.schema.tables.length + 1;
+    let name = `table_${index}`;
+
+    while (existingNames.has(name)) {
+      index += 1;
+      name = `table_${index}`;
+    }
+
+    const offset = (store.schema.tables.length * 30) % 200;
+    store.addTable({
+      id: crypto.randomUUID(),
+      name,
+      columns: [
+        {
+          id: crypto.randomUUID(),
+          name: 'id',
+          type: 'uuid',
+          isPrimaryKey: true,
+          isNotNull: true,
+          isUnique: true,
+        },
+      ],
+      position: { x: 100 + offset, y: 100 + offset },
+    });
+  }, [store]);
+
+  const handleToggleSidebar = React.useCallback(() => {
+    setIsSidebarVisible((prev) => !prev);
+  }, []);
+
   // Keyboard shortcuts
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isTypingInInput =
+        !!target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable);
+
+      const isNewTableShortcut =
+        ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'n') ||
+        ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k');
+
+      if (isNewTableShortcut) {
+        if (isTypingInInput) return;
+        e.preventDefault();
+        e.stopPropagation();
+        handleQuickAddTable();
+        return;
+      }
+
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+        if (isTypingInInput) return;
+        e.preventDefault();
+        e.stopPropagation();
+        handleToggleSidebar();
+        return;
+      }
+
       if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
         if (e.shiftKey) store.redo();
         else store.undo();
@@ -62,14 +123,14 @@ export default function Designer() {
         store.cancelConnecting();
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [store]);
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
+  }, [store, handleQuickAddTable, handleToggleSidebar]);
 
   return (
     <div className="h-screen w-full flex bg-background text-foreground overflow-hidden relative">
       {/* Top Navigation Bar */}
-      <div className="absolute top-0 left-64 right-0 h-14 glass-panel border-l-0 border-r-0 border-t-0 z-20 flex items-center justify-between px-4">
+      <div className={`absolute top-0 ${isSidebarVisible ? 'left-64' : 'left-0'} right-0 h-[59px] glass-panel border-l-0 border-r-0 border-t-0 z-20 flex items-center justify-between px-4`}>
         <div className="flex items-center gap-2">
           <Button 
             variant="ghost" 
@@ -132,14 +193,16 @@ export default function Designer() {
         </div>
       </div>
 
-      <Sidebar 
-        schema={store.schema} 
-        onAddTable={handleOpenNewTable}
-        onEditTable={handleOpenEditTable}
-      />
+      {isSidebarVisible && (
+        <Sidebar 
+          schema={store.schema} 
+          onAddTable={handleOpenNewTable}
+          onEditTable={handleOpenEditTable}
+        />
+      )}
 
       {/* Infinite Canvas Area */}
-      <div className="flex-1 relative cursor-grab active:cursor-grabbing bg-zinc-100 dark:bg-zinc-900 bg-grid-pattern pt-14">
+      <div className="flex-1 relative cursor-grab active:cursor-grabbing bg-zinc-100 dark:bg-zinc-900/70 bg-grid-pattern pt-14">
         <TransformWrapper
           ref={transformRef}
           initialScale={1}
