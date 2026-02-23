@@ -31,8 +31,16 @@ export function generatePostgreSQL(schema: DatabaseSchema): string {
       const toCol = toTable?.columns.find(c => c.id === rel.toColumnId);
 
       if (fromTable && toTable && fromCol && toCol) {
-        sql += `ALTER TABLE "${fromTable.name}" ADD CONSTRAINT "fk_${fromTable.name}_${fromCol.name}" `;
+        // Handle 1:1 by adding a UNIQUE constraint on the foreign key column if it's not already unique
+        const isOneToOne = rel.type === "1:1";
+        const fkName = `fk_${fromTable.name}_${fromCol.name}`;
+        
+        sql += `ALTER TABLE "${fromTable.name}" ADD CONSTRAINT "${fkName}" `;
         sql += `FOREIGN KEY ("${fromCol.name}") REFERENCES "${toTable.name}" ("${toCol.name}");\n`;
+        
+        if (isOneToOne) {
+          sql += `ALTER TABLE "${fromTable.name}" ADD CONSTRAINT "unique_${fromTable.name}_${fromCol.name}" UNIQUE ("${fromCol.name}");\n`;
+        }
       }
     });
   }
