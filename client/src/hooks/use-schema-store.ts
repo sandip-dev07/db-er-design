@@ -110,7 +110,7 @@ export function useSchemaStore() {
     setConnectingFrom(null);
   }, []);
 
-  const finishConnecting = useCallback((toTableId: string, toColumnId: string) => {
+  const finishConnecting = useCallback((toTableId: string, toColumnId: string, type: RelationType = "1:N") => {
     if (!connectingFrom) return;
     
     // Prevent self-connections on the same column
@@ -124,7 +124,8 @@ export function useSchemaStore() {
       fromTableId: connectingFrom.tableId,
       fromColumnId: connectingFrom.columnId,
       toTableId,
-      toColumnId
+      toColumnId,
+      type
     };
 
     commit({
@@ -133,6 +134,27 @@ export function useSchemaStore() {
     });
     setConnectingFrom(null);
   }, [connectingFrom, present, commit]);
+
+  const updateRelationType = useCallback((relationId: string, type: RelationType) => {
+    commit({
+      ...present,
+      relations: present.relations.map(r => r.id === relationId ? { ...r, type } : r)
+    });
+  }, [present, commit]);
+
+  const reorderColumns = useCallback((tableId: string, startIndex: number, endIndex: number) => {
+    const table = present.tables.find(t => t.id === tableId);
+    if (!table) return;
+
+    const newColumns = [...table.columns];
+    const [removed] = newColumns.splice(startIndex, 1);
+    newColumns.splice(endIndex, 0, removed);
+
+    commit({
+      ...present,
+      tables: present.tables.map(t => t.id === tableId ? { ...t, columns: newColumns } : t)
+    });
+  }, [present, commit]);
 
   const deleteRelation = useCallback((relationId: string) => {
     commit({
@@ -157,6 +179,8 @@ export function useSchemaStore() {
     startConnecting,
     cancelConnecting,
     finishConnecting,
+    updateRelationType,
+    reorderColumns,
     deleteRelation
   };
 }

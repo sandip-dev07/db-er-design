@@ -1,6 +1,6 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { Table, Column } from '@/lib/schema-types';
-import { Key, Link as LinkIcon, Edit2, Plus, GripHorizontal, Trash2 } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Table } from '@/lib/schema-types';
+import { Key, Link as LinkIcon, Edit2, Plus, GripHorizontal, Trash2, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface TableNodeProps {
@@ -11,6 +11,7 @@ interface TableNodeProps {
   onDelete: (id: string) => void;
   onStartConnect: (tableId: string, columnId: string) => void;
   onFinishConnect: (tableId: string, columnId: string) => void;
+  onReorderColumns: (tableId: string, startIndex: number, endIndex: number) => void;
   connectingFrom: { tableId: string, columnId: string } | null;
   scale: number;
 }
@@ -23,15 +24,17 @@ export const TableNode: React.FC<TableNodeProps> = ({
   onDelete,
   onStartConnect,
   onFinishConnect,
+  onReorderColumns,
   connectingFrom,
   scale
 }) => {
-  const nodeRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [draggedColumnIndex, setDraggedColumnIndex] = useState<number | null>(null);
 
   const handlePointerDown = (e: React.PointerEvent) => {
+    const target = e.target as HTMLElement;
     // Only drag from the header
-    if (!(e.target as HTMLElement).closest('.drag-handle')) return;
+    if (!target.closest('.drag-handle')) return;
     
     e.preventDefault();
     e.stopPropagation();
@@ -62,11 +65,30 @@ export const TableNode: React.FC<TableNodeProps> = ({
     document.addEventListener('pointerup', handlePointerUp);
   };
 
+  const handleColumnDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedColumnIndex(index);
+    e.dataTransfer.setData('text/plain', index.toString());
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleColumnDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleColumnDrop = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedColumnIndex === null) return;
+    if (draggedColumnIndex !== index) {
+      onReorderColumns(table.id, draggedColumnIndex, index);
+    }
+    setDraggedColumnIndex(null);
+  };
+
   const isConnecting = connectingFrom !== null;
 
   return (
     <div
-      ref={nodeRef}
       className={`absolute w-72 canvas-node ${isDragging ? 'z-50 canvas-node-active shadow-2xl scale-[1.02]' : 'z-10'} transition-transform duration-100`}
       style={{
         transform: `translate(${table.position.x}px, ${table.position.y}px)`,
@@ -108,17 +130,21 @@ export const TableNode: React.FC<TableNodeProps> = ({
         {table.columns.length === 0 && (
           <div className="py-4 text-center text-xs text-slate-500 italic">No columns</div>
         )}
-        {table.columns.map(col => {
+        {table.columns.map((col, index) => {
           const isTarget = isConnecting && connectingFrom?.tableId !== table.id;
           
           return (
             <div 
               key={col.id} 
+              draggable={!isConnecting}
+              onDragStart={(e) => handleColumnDragStart(e, index)}
+              onDragOver={(e) => handleColumnDragOver(e, index)}
+              onDrop={(e) => handleColumnDrop(e, index)}
               className={`flex items-center justify-between py-2 px-2 rounded-md transition-colors ${
                 isTarget 
                   ? 'hover:bg-cyan-900/30 cursor-crosshair border border-cyan-500/30' 
                   : 'hover:bg-slate-800/50 border border-transparent'
-              }`}
+              } ${draggedColumnIndex === index ? 'opacity-50' : ''}`}
               onClick={(e) => {
                 if (isTarget) {
                   e.stopPropagation();
@@ -127,6 +153,9 @@ export const TableNode: React.FC<TableNodeProps> = ({
               }}
             >
               <div className="flex items-center gap-2 overflow-hidden">
+                {!isConnecting && (
+                  <GripVertical size={12} className="text-slate-600 flex-shrink-0 cursor-grab active:cursor-grabbing" />
+                )}
                 <button 
                   className={`flex-shrink-0 p-1 rounded transition-colors ${
                     isConnecting 

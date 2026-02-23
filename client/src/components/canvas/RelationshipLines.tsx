@@ -5,6 +5,7 @@ import { XCircle } from 'lucide-react';
 interface RelationshipLinesProps {
   schema: DatabaseSchema;
   onDeleteRelation: (id: string) => void;
+  onUpdateRelationType: (id: string, type: RelationType) => void;
   scale: number;
 }
 
@@ -50,8 +51,12 @@ export const RelationshipLines: React.FC<RelationshipLinesProps> = ({ schema, on
       return {
         id: rel.id,
         path: pathData,
+        type: rel.type,
         midX,
-        midY
+        midY,
+        start,
+        end,
+        fromIsLeft
       };
     }).filter(Boolean);
   }, [schema]);
@@ -85,6 +90,26 @@ export const RelationshipLines: React.FC<RelationshipLinesProps> = ({ schema, on
             markerEnd="url(#arrowhead)"
             className="transition-all duration-200 group-hover:strokeOpacity-100 group-hover:strokeWidth-3 shadow-cyan-500 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]"
           />
+          
+          {/* Relation Type Labels */}
+          <g transform={`translate(${line.start.x + (line.fromIsLeft ? 25 : -25)}, ${line.start.y - 10})`}>
+            <rect x="-8" y="-8" width="16" height="16" rx="8" fill="#0f172a" stroke="#1e293b" strokeWidth="1" />
+            <text x="0" y="4" textAnchor="middle" fontSize="10" fill="#94a3b8" fontWeight="bold">1</text>
+          </g>
+
+          <g 
+            transform={`translate(${line.end.x + (line.fromIsLeft ? -25 : 25)}, ${line.end.y - 10})`}
+            className="cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              onUpdateRelationType(line.id, line.type === '1:N' ? '1:1' : '1:N');
+            }}
+          >
+            <rect x="-10" y="-8" width="20" height="16" rx="8" fill="#0f172a" stroke="#06b6d4" strokeWidth="1" />
+            <text x="0" y="4" textAnchor="middle" fontSize="10" fill="#06b6d4" fontWeight="bold">
+              {line.type === '1:N' ? 'N' : '1'}
+            </text>
+          </g>
           
           {/* Delete button that appears on hover */}
           <g 

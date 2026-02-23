@@ -137,6 +137,7 @@ export default function Designer() {
               <RelationshipLines 
                 schema={store.schema} 
                 onDeleteRelation={store.deleteRelation}
+                onUpdateRelationType={store.updateRelationType}
                 scale={scale}
               />
 
@@ -150,6 +151,7 @@ export default function Designer() {
                   onDelete={store.deleteTable}
                   onStartConnect={store.startConnecting}
                   onFinishConnect={store.finishConnecting}
+                  onReorderColumns={store.reorderColumns}
                   connectingFrom={store.connectingFrom}
                   scale={scale}
                 />

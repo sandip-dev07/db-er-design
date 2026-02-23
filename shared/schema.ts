@@ -23,12 +23,15 @@ export const TableSchema = z.object({
   })
 });
 
+export const RelationTypeSchema = z.enum(["1:1", "1:N"]);
+
 export const RelationSchema = z.object({
   id: z.string(),
   fromTableId: z.string(),
   fromColumnId: z.string(),
   toTableId: z.string(),
   toColumnId: z.string(),
+  type: RelationTypeSchema.default("1:N"),
 });
 
 export const DatabaseSchemaSchema = z.object({
@@ -39,5 +42,6 @@ export const DatabaseSchemaSchema = z.object({
 export type ColumnType = typeof columnTypes[number];
 export type Column = z.infer<typeof ColumnSchema>;
 export type Table = z.infer<typeof TableSchema>;
+export type RelationType = z.infer<typeof RelationTypeSchema>;
 export type Relation = z.infer<typeof RelationSchema>;
 export type DatabaseSchema = z.infer<typeof DatabaseSchemaSchema>;
