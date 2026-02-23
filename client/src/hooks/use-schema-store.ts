@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { DatabaseSchema, Table, Relation, Column } from "@/lib/schema-types";
+import { DatabaseSchema, Table, Relation, Column, RelationType } from "@/lib/schema-types";
 
 const LOCAL_STORAGE_KEY = "schema-designer-state";
 

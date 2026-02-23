@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { DatabaseSchema, Table } from '@/lib/schema-types';
+import { DatabaseSchema, Table, RelationType } from '@/lib/schema-types';
 import { XCircle } from 'lucide-react';
 
 interface RelationshipLinesProps {
@@ -14,7 +14,7 @@ const TABLE_WIDTH = 288; // w-72 = 18rem = 288px
 const HEADER_HEIGHT = 48; // Estimate based on py-3 and text size
 const ROW_HEIGHT = 40; // Estimate based on py-2 and text size
 
-export const RelationshipLines: React.FC<RelationshipLinesProps> = ({ schema, onDeleteRelation, scale }) => {
+export const RelationshipLines: React.FC<RelationshipLinesProps> = ({ schema, onDeleteRelation, onUpdateRelationType, scale }) => {
   
   const getPortPosition = (table: Table, columnId: string, side: 'left' | 'right') => {
     const colIndex = table.columns.findIndex(c => c.id === columnId);
