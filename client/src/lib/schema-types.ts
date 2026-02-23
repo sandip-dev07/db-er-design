@@ -1,7 +1,25 @@
 import { z } from "zod";
 
 export const columnTypes = [
-  "uuid", "integer", "serial", "text", "varchar", "boolean", "timestamp", "date", "json", "jsonb", "real", "double precision"
+  "uuid",
+  "integer",
+  "serial",
+  "text",
+  "varchar",
+  "char",
+  "boolean",
+  "timestamp",
+  "timestamptz",
+  "date",
+  "time",
+  "interval",
+  "json",
+  "jsonb",
+  "real",
+  "double precision",
+  "numeric",
+  "bigint",
+  "enum",
 ] as const;
 
 export const ColumnSchema = z.object({

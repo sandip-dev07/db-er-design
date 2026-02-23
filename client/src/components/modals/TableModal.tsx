@@ -4,11 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, Column, columnTypes } from '@/lib/schema-types';
-import { Plus, Trash2, GripVertical } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Check, ChevronsUpDown } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 
 interface TableModalProps {
   isOpen: boolean;
@@ -21,6 +23,10 @@ export const TableModal: React.FC<TableModalProps> = ({ isOpen, onClose, onSave,
   const [name, setName] = useState('');
   const [columns, setColumns] = useState<Column[]>([]);
   const [draggedColumnIndex, setDraggedColumnIndex] = useState<number | null>(null);
+  const [columnToFocusId, setColumnToFocusId] = useState<string | null>(null);
+  const [openTypeForColumnId, setOpenTypeForColumnId] = useState<string | null>(null);
+  const columnInputRefs = React.useRef<Record<string, HTMLInputElement | null>>({});
+  const typeSearchInputRef = React.useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -37,11 +43,30 @@ export const TableModal: React.FC<TableModalProps> = ({ isOpen, onClose, onSave,
   }, [isOpen, initialData]);
 
   const handleAddColumn = () => {
-    setColumns([
-      ...columns,
-      { id: uuidv4(), name: 'new_column', type: 'varchar', isPrimaryKey: false, isNotNull: false, isUnique: false }
+    const newColumnId = uuidv4();
+    setColumns((prev) => [
+      ...prev,
+      { id: newColumnId, name: 'new_column', type: 'text', isPrimaryKey: false, isNotNull: false, isUnique: false }
     ]);
+    setColumnToFocusId(newColumnId);
   };
+
+  useEffect(() => {
+    if (!columnToFocusId) return;
+    const input = columnInputRefs.current[columnToFocusId];
+    if (!input) return;
+    input.focus();
+    input.select();
+    setColumnToFocusId(null);
+  }, [columns, columnToFocusId]);
+
+  useEffect(() => {
+    if (!openTypeForColumnId) return;
+    const frame = requestAnimationFrame(() => {
+      typeSearchInputRef.current?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [openTypeForColumnId]);
 
   const handleUpdateColumn = (id: string, updates: Partial<Column>) => {
     setColumns(columns.map(col => col.id === id ? { ...col, ...updates } : col));
@@ -161,23 +186,65 @@ export const TableModal: React.FC<TableModalProps> = ({ isOpen, onClose, onSave,
                         value={col.name}
                         onChange={(e) => handleUpdateColumn(col.id, { name: e.target.value })}
                         className="h-8 bg-card border-border font-mono text-sm"
+                        ref={(el) => {
+                          columnInputRefs.current[col.id] = el;
+                        }}
                       />
                       
-                      <Select 
-                        value={col.type} 
-                        onValueChange={(val: any) => handleUpdateColumn(col.id, { type: val })}
+                      <Popover
+                        open={openTypeForColumnId === col.id}
+                        onOpenChange={(open) => setOpenTypeForColumnId(open ? col.id : null)}
                       >
-                        <SelectTrigger className="h-8 bg-card border-border font-mono text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-card border-border max-h-60">
-                          {columnTypes.map(type => (
-                            <SelectItem key={type} value={type} className="font-mono text-xs focus:bg-accent">
-                              {type}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            role="combobox"
+                            className="h-8 w-full justify-between bg-card border border-border font-mono text-xs px-3"
+                          >
+                            <span>{col.type}</span>
+                            <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-[220px] p-0 bg-card border-border"
+                          align="start"
+                          onWheelCapture={(e) => e.stopPropagation()}
+                        >
+                          <Command>
+                            <CommandInput
+                              ref={typeSearchInputRef}
+                              autoFocus
+                              placeholder="Search type..."
+                              className="font-mono text-xs"
+                            />
+                            <CommandList className="max-h-52 overflow-y-auto" onWheelCapture={(e) => e.stopPropagation()}>
+                              <CommandEmpty>No type found.</CommandEmpty>
+                              <CommandGroup>
+                                {columnTypes.map((type) => (
+                                  <CommandItem
+                                    key={type}
+                                    value={type}
+                                    className="font-mono text-xs"
+                                    onSelect={() => {
+                                      handleUpdateColumn(col.id, { type });
+                                      setOpenTypeForColumnId(null);
+                                    }}
+                                  >
+                                    {type}
+                                    <Check
+                                      className={cn(
+                                        "ml-auto h-3.5 w-3.5",
+                                        col.type === type ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
 
                       <div className="flex justify-center">
                         <Checkbox 

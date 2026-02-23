@@ -52,6 +52,14 @@ export default function Designer() {
     }
   };
 
+  const handleDeleteTable = React.useCallback((tableId: string) => {
+    const table = store.schema.tables.find((t) => t.id === tableId);
+    const tableLabel = table?.name ?? 'this table';
+    const shouldDelete = window.confirm(`Delete "${tableLabel}" and its relations?`);
+    if (!shouldDelete) return;
+    store.deleteTable(tableId);
+  }, [store]);
+
   const handleQuickAddTable = React.useCallback(() => {
     const existingNames = new Set(store.schema.tables.map((t) => t.name));
     let index = store.schema.tables.length + 1;
@@ -230,7 +238,7 @@ export default function Designer() {
                   onUpdatePosition={store.updateTablePosition}
                   onDragEnd={store.commitTablePosition}
                   onEdit={handleOpenEditTable}
-                  onDelete={store.deleteTable}
+                  onDelete={handleDeleteTable}
                   onStartConnect={store.startConnecting}
                   onFinishConnect={store.finishConnecting}
                   onReorderColumns={store.reorderColumns}
