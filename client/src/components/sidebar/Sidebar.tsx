@@ -17,11 +17,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ schema, onAddTable, onEditTabl
       <div className="p-3 border-b border-border flex items-center gap-3">
         <img
           src="/favicon.png"
-          alt="Schema Canvas logo"
+          alt="Canvas Schema logo"
           className="h-8 w-8 rounded-md border border-border bg-card object-cover"
         />
         <div className="min-w-0">
-          <h1 className="font-semibold text-base text-foreground tracking-tight leading-none">Schema Canvas</h1>
+          <h1 className="font-semibold text-base text-foreground tracking-tight leading-none">Canvas Schema</h1>
           <p className="text-[10px] text-muted-foreground mt-1">Database Designer</p>
         </div>
       </div>
