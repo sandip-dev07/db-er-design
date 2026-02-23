@@ -138,7 +138,7 @@ export default function Designer() {
   return (
     <div className="h-screen w-full flex bg-background text-foreground overflow-hidden relative">
       {/* Top Navigation Bar */}
-      <div className={`absolute top-0 ${isSidebarVisible ? 'left-64' : 'left-0'} right-0 h-[59px] glass-panel border-l-0 border-r-0 border-t-0 z-20 flex items-center justify-between px-4`}>
+      <div className={`absolute top-0 ${isSidebarVisible ? 'left-64' : 'left-0'} right-0 h-[60px] glass-panel border-l-0 border-r-0 border-t-0 z-20 flex items-center justify-between px-4`}>
         <div className="flex items-center gap-2">
           <Button 
             variant="ghost" 

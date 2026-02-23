@@ -1,7 +1,7 @@
 import React from 'react';
 import { DatabaseSchema } from '@/lib/schema-types';
 import { Button } from '@/components/ui/button';
-import { Plus, Database, Table2 } from 'lucide-react';
+import { Plus, Table2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface SidebarProps {
@@ -13,11 +13,17 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ schema, onAddTable, onEditTable }) => {
   return (
     <div className="w-64 border-r border-border bg-background/90 backdrop-blur-xl flex flex-col h-full z-20 ">
-      <div className="p-3 border-b border-border flex items-center gap-2">
-        <div className="bg-card p-2 rounded-lg border border-border">
-          <Database size={16} className="text-foreground" />
+      {/* Header */}
+      <div className="p-3 border-b border-border flex items-center gap-3">
+        <img
+          src="/favicon.png"
+          alt="Schema Canvas logo"
+          className="h-8 w-8 rounded-md border border-border bg-card object-cover"
+        />
+        <div className="min-w-0">
+          <h1 className="font-semibold text-base text-foreground tracking-tight leading-none">Schema Canvas</h1>
+          <p className="text-[10px] text-muted-foreground mt-1">Database Designer</p>
         </div>
-        <h1 className="font-semibold text-lg text-foreground tracking-tight">DB Designer</h1>
       </div>
 
       <div className="p-4">
