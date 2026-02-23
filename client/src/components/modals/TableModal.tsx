@@ -20,6 +20,7 @@ interface TableModalProps {
 export const TableModal: React.FC<TableModalProps> = ({ isOpen, onClose, onSave, initialData }) => {
   const [name, setName] = useState('');
   const [columns, setColumns] = useState<Column[]>([]);
+  const [draggedColumnIndex, setDraggedColumnIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -50,6 +51,38 @@ export const TableModal: React.FC<TableModalProps> = ({ isOpen, onClose, onSave,
     setColumns(columns.filter(col => col.id !== id));
   };
 
+  const handleColumnDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedColumnIndex(index);
+    e.dataTransfer.setData('text/plain', index.toString());
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleColumnDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleColumnDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+
+    if (draggedColumnIndex === null || draggedColumnIndex === dropIndex) {
+      setDraggedColumnIndex(null);
+      return;
+    }
+
+    setColumns((prev) => {
+      const reordered = [...prev];
+      const [moved] = reordered.splice(draggedColumnIndex, 1);
+      reordered.splice(dropIndex, 0, moved);
+      return reordered;
+    });
+    setDraggedColumnIndex(null);
+  };
+
+  const handleColumnDragEnd = () => {
+    setDraggedColumnIndex(null);
+  };
+
   const handleSave = () => {
     if (!name.trim()) return;
     
@@ -66,7 +99,7 @@ export const TableModal: React.FC<TableModalProps> = ({ isOpen, onClose, onSave,
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl bg-slate-950 border-slate-800 text-slate-200">
+      <DialogContent className="max-w-3xl bg-background border-border text-foreground">
         <DialogHeader>
           <DialogTitle>{initialData ? 'Edit Table' : 'Create Table'}</DialogTitle>
         </DialogHeader>
@@ -79,20 +112,20 @@ export const TableModal: React.FC<TableModalProps> = ({ isOpen, onClose, onSave,
               value={name} 
               onChange={(e) => setName(e.target.value)} 
               placeholder="users"
-              className="bg-slate-900 border-slate-700 font-mono"
+              className="bg-card border-border font-mono"
             />
           </div>
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label>Columns</Label>
-              <Button onClick={handleAddColumn} size="sm" variant="outline" className="h-8 border-slate-700 bg-slate-900 hover:bg-slate-800">
+              <Button onClick={handleAddColumn} size="sm" variant="outline" className="h-8 border-border bg-card hover:bg-accent">
                 <Plus size={14} className="mr-1" /> Add Column
               </Button>
             </div>
 
-            <div className="border border-slate-800 rounded-md overflow-hidden bg-slate-900/50">
-              <div className="grid grid-cols-[24px_2fr_2fr_1fr_1fr_1fr_40px] gap-2 p-2 bg-slate-900 border-b border-slate-800 text-xs font-semibold text-slate-400">
+            <div className="border border-border rounded-md overflow-hidden bg-card/50">
+              <div className="grid grid-cols-[24px_2fr_2fr_1fr_1fr_1fr_40px] gap-2 p-2 bg-card border-b border-border text-xs font-semibold text-muted-foreground">
                 <div></div>
                 <div>Name</div>
                 <div>Type</div>
@@ -105,25 +138,41 @@ export const TableModal: React.FC<TableModalProps> = ({ isOpen, onClose, onSave,
               <ScrollArea className="h-[300px]">
                 <div className="p-2 space-y-2">
                   {columns.map((col, index) => (
-                    <div key={col.id} className="grid grid-cols-[24px_2fr_2fr_1fr_1fr_1fr_40px] gap-2 items-center bg-slate-950 p-2 rounded border border-slate-800/50">
-                      <GripVertical size={14} className="text-slate-600 cursor-move" />
+                    <div
+                      key={col.id}
+                      onDragOver={handleColumnDragOver}
+                      onDrop={(e) => handleColumnDrop(e, index)}
+                      className={`grid grid-cols-[24px_2fr_2fr_1fr_1fr_1fr_40px] gap-2 items-center bg-background p-2 rounded border border-border ${
+                        draggedColumnIndex === index ? 'opacity-50' : ''
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        draggable
+                        onDragStart={(e) => handleColumnDragStart(e, index)}
+                        onDragEnd={handleColumnDragEnd}
+                        className="flex items-center justify-center text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
+                        title="Drag to reorder column"
+                      >
+                        <GripVertical size={14} />
+                      </button>
                       
                       <Input 
                         value={col.name}
                         onChange={(e) => handleUpdateColumn(col.id, { name: e.target.value })}
-                        className="h-8 bg-slate-900 border-slate-700 font-mono text-sm"
+                        className="h-8 bg-card border-border font-mono text-sm"
                       />
                       
                       <Select 
                         value={col.type} 
                         onValueChange={(val: any) => handleUpdateColumn(col.id, { type: val })}
                       >
-                        <SelectTrigger className="h-8 bg-slate-900 border-slate-700 font-mono text-xs">
+                        <SelectTrigger className="h-8 bg-card border-border font-mono text-xs">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-slate-900 border-slate-700 max-h-60">
+                        <SelectContent className="bg-card border-border max-h-60">
                           {columnTypes.map(type => (
-                            <SelectItem key={type} value={type} className="font-mono text-xs focus:bg-slate-800">
+                            <SelectItem key={type} value={type} className="font-mono text-xs focus:bg-accent">
                               {type}
                             </SelectItem>
                           ))}
@@ -137,7 +186,7 @@ export const TableModal: React.FC<TableModalProps> = ({ isOpen, onClose, onSave,
                             isPrimaryKey: !!checked,
                             ...(checked ? { isNotNull: true, isUnique: true } : {}) 
                           })}
-                          className="border-slate-600 data-[state=checked]:bg-primary"
+                          className="border-border data-[state=checked]:bg-foreground"
                         />
                       </div>
 
@@ -146,7 +195,7 @@ export const TableModal: React.FC<TableModalProps> = ({ isOpen, onClose, onSave,
                           checked={col.isNotNull}
                           disabled={col.isPrimaryKey}
                           onCheckedChange={(checked) => handleUpdateColumn(col.id, { isNotNull: !!checked })}
-                          className="border-slate-600"
+                          className="border-border"
                         />
                       </div>
 
@@ -155,7 +204,7 @@ export const TableModal: React.FC<TableModalProps> = ({ isOpen, onClose, onSave,
                           checked={col.isUnique}
                           disabled={col.isPrimaryKey}
                           onCheckedChange={(checked) => handleUpdateColumn(col.id, { isUnique: !!checked })}
-                          className="border-slate-600"
+                          className="border-border"
                         />
                       </div>
 
@@ -163,14 +212,14 @@ export const TableModal: React.FC<TableModalProps> = ({ isOpen, onClose, onSave,
                         variant="ghost" 
                         size="icon" 
                         onClick={() => handleRemoveColumn(col.id)}
-                        className="h-8 w-8 text-slate-500 hover:text-red-400 hover:bg-red-950/30"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-accent"
                       >
                         <Trash2 size={14} />
                       </Button>
                     </div>
                   ))}
                   {columns.length === 0 && (
-                    <div className="text-center py-8 text-slate-500 text-sm">
+                    <div className="text-center py-8 text-muted-foreground text-sm">
                       No columns defined. Add one to get started.
                     </div>
                   )}
@@ -181,8 +230,8 @@ export const TableModal: React.FC<TableModalProps> = ({ isOpen, onClose, onSave,
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} className="hover:bg-slate-800">Cancel</Button>
-          <Button onClick={handleSave} className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20">
+          <Button variant="ghost" onClick={onClose} className="hover:bg-accent">Cancel</Button>
+          <Button onClick={handleSave} className="bg-primary text-primary-foreground hover:bg-primary/90">
             Save Table
           </Button>
         </DialogFooter>

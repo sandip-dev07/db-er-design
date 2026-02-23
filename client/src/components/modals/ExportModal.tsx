@@ -43,36 +43,36 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, schem
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl bg-slate-950 border-slate-800 text-slate-200">
+      <DialogContent className="max-w-4xl bg-background border-border text-foreground">
         <DialogHeader>
           <DialogTitle>Export Schema</DialogTitle>
-          <DialogDescription className="text-slate-400">
+          <DialogDescription className="text-muted-foreground">
             Generated PostgreSQL script for your database design.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="relative mt-2 border border-slate-800 rounded-md overflow-hidden bg-[#0d1117]">
+        <div className="relative mt-2 border border-border rounded-md overflow-hidden bg-card">
           <div className="absolute top-2 right-2 flex gap-2">
             <Button 
               size="sm" 
               variant="secondary" 
-              className="h-8 bg-white/10 hover:bg-white/20 text-white border-0"
+              className="h-8 bg-secondary hover:bg-secondary/80 text-secondary-foreground border border-border"
               onClick={handleCopy}
             >
-              {copied ? <Check size={14} className="mr-1 text-green-400" /> : <Copy size={14} className="mr-1" />}
+              {copied ? <Check size={14} className="mr-1" /> : <Copy size={14} className="mr-1" />}
               {copied ? 'Copied' : 'Copy'}
             </Button>
           </div>
           <ScrollArea className="h-[500px] w-full p-4">
-            <pre className="font-mono text-sm text-slate-300">
+            <pre className="font-mono text-sm text-foreground">
               <code>{sql || '-- Schema is empty. Add some tables!'}</code>
             </pre>
           </ScrollArea>
         </div>
 
         <DialogFooter className="mt-4">
-          <Button variant="ghost" onClick={onClose} className="hover:bg-slate-800">Close</Button>
-          <Button onClick={handleDownload} className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20">
+          <Button variant="ghost" onClick={onClose} className="hover:bg-accent">Close</Button>
+          <Button onClick={handleDownload} className="bg-primary text-primary-foreground hover:bg-primary/90">
             <Download size={16} className="mr-2" /> Download .sql
           </Button>
         </DialogFooter>

@@ -1,21 +1,25 @@
 import React, { useState, useRef } from 'react';
 import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import { useSchemaStore } from '@/hooks/use-schema-store';
+import { useTheme } from '@/hooks/use-theme';
 import { Sidebar } from '@/components/sidebar/Sidebar';
 import { TableNode } from '@/components/canvas/TableNode';
 import { RelationshipLines } from '@/components/canvas/RelationshipLines';
 import { TableModal } from '@/components/modals/TableModal';
 import { ExportModal } from '@/components/modals/ExportModal';
+import { ImportModal } from '@/components/modals/ImportModal';
 import { Table } from '@/lib/schema-types';
 import { Button } from '@/components/ui/button';
-import { Undo2, Redo2, Download, Trash2, MousePointer2 } from 'lucide-react';
+import { Undo2, Redo2, Download, Trash2, MousePointer2, Upload, Moon, Sun } from 'lucide-react';
 
 export default function Designer() {
   const store = useSchemaStore();
+  const { theme, toggleTheme } = useTheme();
   
   // Modals state
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingTable, setEditingTable] = useState<Table | undefined>(undefined);
   
   // Canvas scale tracking for accurate drag math
@@ -63,16 +67,16 @@ export default function Designer() {
   }, [store]);
 
   return (
-    <div className="h-screen w-full flex bg-[#0f111a] text-slate-200 overflow-hidden relative">
+    <div className="h-screen w-full flex bg-background text-foreground overflow-hidden relative">
       {/* Top Navigation Bar */}
-      <div className="absolute top-0 left-64 right-0 h-14 bg-slate-950/50 backdrop-blur-md border-b border-white/5 z-20 flex items-center justify-between px-4">
+      <div className="absolute top-0 left-64 right-0 h-14 glass-panel border-l-0 border-r-0 border-t-0 z-20 flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={store.undo} 
             disabled={!store.canUndo}
-            className="text-slate-400 hover:text-white"
+            className="text-muted-foreground hover:text-foreground"
           >
             <Undo2 size={16} className="mr-2" /> Undo
           </Button>
@@ -81,18 +85,18 @@ export default function Designer() {
             size="sm" 
             onClick={store.redo} 
             disabled={!store.canRedo}
-            className="text-slate-400 hover:text-white"
+            className="text-muted-foreground hover:text-foreground"
           >
             <Redo2 size={16} className="mr-2" /> Redo
           </Button>
-          <div className="h-4 w-px bg-slate-800 mx-2" />
+          <div className="h-4 w-px bg-border mx-2" />
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={() => {
               if(confirm('Are you sure you want to clear the canvas?')) store.clear();
             }} 
-            className="text-slate-400 hover:text-red-400"
+            className="text-muted-foreground hover:text-foreground hover:bg-accent"
           >
             <Trash2 size={16} className="mr-2" /> Clear
           </Button>
@@ -100,14 +104,28 @@ export default function Designer() {
         
         <div className="flex items-center gap-3">
           {store.connectingFrom && (
-            <div className="flex items-center gap-2 text-cyan-400 bg-cyan-950/40 px-3 py-1.5 rounded-full text-xs font-medium border border-cyan-900/50 animate-pulse">
+            <div className="flex items-center gap-2 text-foreground bg-card px-3 py-1.5 rounded-full text-xs font-medium border border-border animate-pulse">
               <MousePointer2 size={14} /> Select target column...
-              <button onClick={store.cancelConnecting} className="ml-2 hover:text-white underline">Cancel</button>
+              <button onClick={store.cancelConnecting} className="ml-2 hover:text-foreground underline">Cancel</button>
             </div>
           )}
+          <Button
+            onClick={toggleTheme}
+            variant="secondary"
+            className="border-border bg-card/70 hover:bg-accent"
+          >
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          </Button>
+          <Button
+            onClick={() => setIsImportModalOpen(true)}
+            variant="outline"
+            className="border-border bg-card/70 text-foreground hover:bg-accent"
+          >
+            <Upload size={16} className="mr-2" /> Import SQL
+          </Button>
           <Button 
             onClick={() => setIsExportModalOpen(true)}
-            className="bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 text-white shadow-lg shadow-primary/20 border-0"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 border-0"
           >
             <Download size={16} className="mr-2" /> Export SQL
           </Button>
@@ -121,7 +139,7 @@ export default function Designer() {
       />
 
       {/* Infinite Canvas Area */}
-      <div className="flex-1 relative cursor-grab active:cursor-grabbing bg-grid-pattern pt-14">
+      <div className="flex-1 relative cursor-grab active:cursor-grabbing bg-zinc-100 dark:bg-zinc-900 bg-grid-pattern pt-14">
         <TransformWrapper
           ref={transformRef}
           initialScale={1}
@@ -132,11 +150,12 @@ export default function Designer() {
           onTransformed={(ref) => setScale(ref.state.scale)}
         >
           <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }}>
-            <div className="w-[10000px] h-[10000px] relative origin-top-left">
+            <div className="w-[1000px] h-[1000px] relative origin-top-left">
               
               <RelationshipLines 
                 schema={store.schema} 
                 onDeleteRelation={store.deleteRelation}
+                onSwapRelation={store.swapRelation}
                 onUpdateRelationType={store.updateRelationType}
                 scale={scale}
               />
@@ -174,6 +193,12 @@ export default function Designer() {
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
         schema={store.schema}
+      />
+
+      <ImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImport={(schema, mode) => store.importSchema(schema, mode)}
       />
     </div>
   );

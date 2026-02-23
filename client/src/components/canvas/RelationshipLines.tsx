@@ -1,10 +1,12 @@
 import React, { useMemo } from 'react';
 import { DatabaseSchema, Table, RelationType } from '@/lib/schema-types';
-import { XCircle } from 'lucide-react';
+import { ArrowRightLeft, XCircle } from 'lucide-react';
+import { useTheme } from '@/hooks/use-theme';
 
 interface RelationshipLinesProps {
   schema: DatabaseSchema;
   onDeleteRelation: (id: string) => void;
+  onSwapRelation: (id: string) => void;
   onUpdateRelationType: (id: string, type: RelationType) => void;
   scale: number;
 }
@@ -14,7 +16,12 @@ const TABLE_WIDTH = 288; // w-72 = 18rem = 288px
 const HEADER_HEIGHT = 48; // Estimate based on py-3 and text size
 const ROW_HEIGHT = 40; // Estimate based on py-2 and text size
 
-export const RelationshipLines: React.FC<RelationshipLinesProps> = ({ schema, onDeleteRelation, onUpdateRelationType, scale }) => {
+export const RelationshipLines: React.FC<RelationshipLinesProps> = ({ schema, onDeleteRelation, onSwapRelation, onUpdateRelationType, scale }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  const lineColor = isDark ? '#a1a1aa' : '#71717a';
+  const chipFill = isDark ? '#09090b' : '#ffffff';
+  const chipStroke = isDark ? '#52525b' : '#a1a1aa';
   
   const getPortPosition = (table: Table, columnId: string, side: 'left' | 'right') => {
     const colIndex = table.columns.findIndex(c => c.id === columnId);
@@ -64,8 +71,8 @@ export const RelationshipLines: React.FC<RelationshipLinesProps> = ({ schema, on
   return (
     <svg className="absolute inset-0 pointer-events-none w-full h-full" style={{ overflow: 'visible', zIndex: 0 }}>
       <defs>
-        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-          <polygon points="0 0, 10 3.5, 0 7" fill="#06b6d4" />
+        <marker id="arrowhead" markerWidth="6" markerHeight="5" refX="7" refY="2.5" orient="auto">
+          <polygon points="0 0, 7 2.5, 0 5" fill={lineColor} />
         </marker>
       </defs>
       
@@ -84,44 +91,56 @@ export const RelationshipLines: React.FC<RelationshipLinesProps> = ({ schema, on
           <path 
             d={line.path} 
             fill="none" 
-            stroke="#06b6d4" 
+            stroke={lineColor}
             strokeWidth="2"
             strokeOpacity="0.6"
             markerEnd="url(#arrowhead)"
-            className="transition-all duration-200 group-hover:strokeOpacity-100 group-hover:strokeWidth-3 shadow-cyan-500 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]"
+            className="transition-all group-hover:strokeOpacity-100 group-hover:strokeWidth-3"
           />
           
           {/* Relation Type Labels */}
-          <g transform={`translate(${line.start.x + (line.fromIsLeft ? 25 : -25)}, ${line.start.y - 10})`}>
-            <rect x="-8" y="-8" width="16" height="16" rx="8" fill="#0f172a" stroke="#1e293b" strokeWidth="1" />
-            <text x="0" y="4" textAnchor="middle" fontSize="10" fill="#94a3b8" fontWeight="bold">1</text>
+          <g transform={`translate(${line.start.x + (line.fromIsLeft ? 15 : -30)}, ${line.start.y - 8})`}>
+            <rect width="20" height="16" rx="8" fill={chipFill} stroke={chipStroke} strokeWidth="1" />
+             <text textAnchor="" x="6" y="12" fontSize="10" fill={lineColor} fontWeight="bold">1</text>
           </g>
 
           <g 
-            transform={`translate(${line.end.x + (line.fromIsLeft ? -25 : 25)}, ${line.end.y - 10})`}
+            transform={`translate(${line.end.x + (line.fromIsLeft ? -45 : 28)}, ${line.end.y - 9})`}
             className="cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
               onUpdateRelationType(line.id, line.type === '1:N' ? '1:1' : '1:N');
             }}
           >
-            <rect x="-10" y="-8" width="20" height="16" rx="8" fill="#0f172a" stroke="#06b6d4" strokeWidth="1" />
-            <text x="0" y="4" textAnchor="middle" fontSize="10" fill="#06b6d4" fontWeight="bold">
+            <rect width="20" height="16" rx="8" fill={chipFill} stroke={chipStroke} strokeWidth="1" />
+            <text textAnchor="" x="6" y="12" fontSize="10" fill={lineColor} fontWeight="bold">
               {line.type === '1:N' ? 'N' : '1'}
             </text>
           </g>
           
-          {/* Delete button that appears on hover */}
-          <g 
-            transform={`translate(${line.midX}, ${line.midY}) scale(${1/scale})`} 
-            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer"
+          {/* Swap and delete buttons that appear on hover */}
+          <g
+            transform={`translate(${line.midX - 14}, ${line.midY}) scale(${1/scale})`}
+            className="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSwapRelation(line.id);
+            }}
+          >
+            <circle cx="0" cy="0" r="12" fill={chipFill} stroke={chipStroke} />
+            <ArrowRightLeft x="-8" y="-8" size={16} className="text-muted-foreground hover:text-foreground" />
+          </g>
+
+          <g
+            transform={`translate(${line.midX + 14}, ${line.midY}) scale(${1/scale})`}
+            className="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
               onDeleteRelation(line.id);
             }}
           >
-            <circle cx="0" cy="0" r="12" fill="#0f172a" stroke="#1e293b" />
-            <XCircle x="-8" y="-8" size={16} className="text-red-500 hover:text-red-400" />
+            <circle cx="0" cy="0" r="12" fill={chipFill} stroke={chipStroke} />
+            <XCircle x="-8" y="-8" size={16} className="text-muted-foreground hover:text-foreground" />
           </g>
         </g>
       ))}

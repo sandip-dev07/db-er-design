@@ -61,6 +61,27 @@ export function useSchemaStore() {
     commit(emptySchema);
   }, [commit]);
 
+  const importSchema = useCallback((incoming: DatabaseSchema, mode: "replace" | "merge" = "replace") => {
+    if (mode === "merge") {
+      const maxExistingX = present.tables.reduce((max, table) => Math.max(max, table.position.x), 0);
+      const shiftedTables = incoming.tables.map((table) => ({
+        ...table,
+        position: {
+          x: table.position.x + maxExistingX + 360,
+          y: table.position.y,
+        },
+      }));
+
+      commit({
+        tables: [...present.tables, ...shiftedTables],
+        relations: [...present.relations, ...incoming.relations],
+      });
+      return;
+    }
+
+    commit(incoming);
+  }, [present, commit]);
+
   // --- Table Actions ---
   const addTable = useCallback((table: Table) => {
     commit({
@@ -142,6 +163,22 @@ export function useSchemaStore() {
     });
   }, [present, commit]);
 
+  const swapRelation = useCallback((relationId: string) => {
+    commit({
+      ...present,
+      relations: present.relations.map((r) => {
+        if (r.id !== relationId) return r;
+        return {
+          ...r,
+          fromTableId: r.toTableId,
+          fromColumnId: r.toColumnId,
+          toTableId: r.fromTableId,
+          toColumnId: r.fromColumnId,
+        };
+      }),
+    });
+  }, [present, commit]);
+
   const reorderColumns = useCallback((tableId: string, startIndex: number, endIndex: number) => {
     const table = present.tables.find(t => t.id === tableId);
     if (!table) return;
@@ -171,6 +208,7 @@ export function useSchemaStore() {
     undo,
     redo,
     clear,
+    importSchema,
     addTable,
     updateTable,
     deleteTable,
@@ -180,6 +218,7 @@ export function useSchemaStore() {
     cancelConnecting,
     finishConnecting,
     updateRelationType,
+    swapRelation,
     reorderColumns,
     deleteRelation
   };
